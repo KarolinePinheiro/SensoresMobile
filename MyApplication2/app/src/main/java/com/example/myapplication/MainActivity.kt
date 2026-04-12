@@ -40,23 +40,74 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AudioPlayerScreen() {
     val context = LocalContext.current
-    val mediaPlayer = remember { MediaPlayer.create(context, R.raw.song1) }
+
+    // BUSCA DINÂMICA: Lista os arquivos da pasta raw por ordem alfabética
+    val songIds = remember {
+        R.raw::class.java.fields
+            .filter { it.type == Int::class.javaPrimitiveType }
+            .sortedBy { it.name }
+            .map { it.getInt(null) }
+    }
+
+    var currentSongIndex by remember { mutableIntStateOf(0) }
+
+    // O MediaPlayer agora é recriado sempre que o índice da música muda
+    val mediaPlayer = remember(currentSongIndex) {
+        if (songIds.isNotEmpty()) {
+            MediaPlayer.create(context, songIds[currentSongIndex])
+        } else null
+    }
+
     var isPlaying by remember { mutableStateOf(false) }
     var currentPosition by remember { mutableIntStateOf(0) }
-    var totalDuration by remember { mutableIntStateOf(mediaPlayer.duration) }
+    var totalDuration by remember { mutableIntStateOf(mediaPlayer?.duration ?: 0) }
 
-    // Cor cinza escuro do XML (#FFAAAAAA)
     val darkerGrey = Color(0xFFAAAAAA)
 
-    // Atualiza a posição atual enquanto toca
-    LaunchedEffect(isPlaying) {
-        while (isPlaying) {
-            currentPosition = mediaPlayer.currentPosition
-            delay(1000)
+    if (mediaPlayer == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Nenhuma música encontrada na pasta raw")
+        }
+        return
+    }
+
+    // Lógica Unificada: Configura o player sempre que ele muda (troca de música)
+    LaunchedEffect(mediaPlayer) {
+        currentPosition = 0 // Reseta a barra para o início
+        totalDuration = mediaPlayer.duration
+        
+        // Se o estado era "tocando", inicia a nova música automaticamente
+        if (isPlaying) {
+            mediaPlayer.start()
+        }
+
+        // Configura o que fazer quando a música terminar
+        mediaPlayer.setOnCompletionListener {
+            if (currentSongIndex < songIds.size - 1) {
+                currentSongIndex++ // Vai para a próxima
+            } else {
+                currentSongIndex = 0 // Volta para a primeira (Loop)
+            }
         }
     }
 
-    DisposableEffect(Unit) {
+    // Loop de progresso: Agora depende de 'isPlaying' E do 'mediaPlayer' atual
+    LaunchedEffect(isPlaying, mediaPlayer) {
+        if (isPlaying) {
+            while (true) {
+                try {
+                    currentPosition = mediaPlayer.currentPosition
+                } catch (e: Exception) {
+                    // Evita crash se o player for libertado enquanto o loop corre
+                    break
+                }
+                delay(1000)
+            }
+        }
+    }
+
+    // Libertar memória ao fechar ou trocar de música
+    DisposableEffect(mediaPlayer) {
         onDispose {
             mediaPlayer.release()
         }
@@ -69,10 +120,9 @@ fun AudioPlayerScreen() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // 1. Imagem do Álbum (250dp x 250dp como no XML)
         Image(
             painter = painterResource(id = R.drawable.album_cover),
-            contentDescription = "Capa do Álbum",
+            contentDescription = null,
             modifier = Modifier
                 .size(250.dp)
                 .clip(RoundedCornerShape(8.dp)),
@@ -81,14 +131,13 @@ fun AudioPlayerScreen() {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // 2. Slider (SeekBar do XML)
         Slider(
             value = currentPosition.toFloat(),
             onValueChange = {
                 currentPosition = it.toInt()
                 mediaPlayer.seekTo(it.toInt())
             },
-            valueRange = 0f..totalDuration.toFloat(),
+            valueRange = 0f..totalDuration.toFloat().coerceAtLeast(1f),
             modifier = Modifier.width(280.dp),
             colors = SliderDefaults.colors(
                 thumbColor = darkerGrey,
@@ -97,7 +146,6 @@ fun AudioPlayerScreen() {
             )
         )
 
-        // 3. Tempos (LinearLayout horizontal do XML)
         Row(
             modifier = Modifier.width(250.dp),
             horizontalArrangement = Arrangement.SpaceBetween
@@ -108,16 +156,13 @@ fun AudioPlayerScreen() {
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // 4. Botões de Controle (Play/Pause unificados e Stop)
         Row(
             modifier = Modifier.width(250.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Espaçador para manter o Play/Pause no centro
             Spacer(modifier = Modifier.width(40.dp))
 
-            // Botão Mágico: Play/Pause (Alterna ícone e função)
             IconButton(
                 onClick = {
                     if (isPlaying) {
@@ -133,17 +178,15 @@ fun AudioPlayerScreen() {
                     painter = painterResource(
                         id = if (isPlaying) R.drawable.pause else R.drawable.play
                     ),
-                    contentDescription = if (isPlaying) "Pause" else "Play",
+                    contentDescription = null,
                     tint = darkerGrey,
                     modifier = Modifier.fillMaxSize()
                 )
             }
 
-            // Botão Stop
             IconButton(
                 onClick = {
-                    mediaPlayer.stop()
-                    mediaPlayer.prepare()
+                    mediaPlayer.pause()
                     mediaPlayer.seekTo(0)
                     currentPosition = 0
                     isPlaying = false
@@ -152,7 +195,7 @@ fun AudioPlayerScreen() {
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.stop),
-                    contentDescription = "Stop",
+                    contentDescription = null,
                     tint = darkerGrey,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -161,7 +204,6 @@ fun AudioPlayerScreen() {
     }
 }
 
-// Função de formatar tempo corrigida para evitar avisos de Locale
 fun formatTime(milliseconds: Int): String {
     val minutes = TimeUnit.MILLISECONDS.toMinutes(milliseconds.toLong())
     val seconds = TimeUnit.MILLISECONDS.toSeconds(milliseconds.toLong()) % 60
