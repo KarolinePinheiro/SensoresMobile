@@ -71,6 +71,26 @@ fun AudioPlayerScreen() {
         return
     }
 
+    // Lógica do Sensor de Proximidade: Play/Pause
+    // O sensor é reiniciado se o mediaPlayer mudar (troca de música)
+    DisposableEffect(mediaPlayer) {
+        val sensorHelper = ProximitySensorHelper(context) {
+            mediaPlayer.let {
+                if (it.isPlaying) {
+                    it.pause()
+                    isPlaying = false
+                } else {
+                    it.start()
+                    isPlaying = true
+                }
+            }
+        }
+        sensorHelper.start()
+        onDispose {
+            sensorHelper.stop()
+        }
+    }
+
     // Lógica Unificada: Configura o player sempre que ele muda (troca de música)
     LaunchedEffect(mediaPlayer) {
         currentPosition = 0 // Reseta a barra para o início
@@ -97,8 +117,7 @@ fun AudioPlayerScreen() {
             while (true) {
                 try {
                     currentPosition = mediaPlayer.currentPosition
-                } catch (e: Exception) {
-                    // Evita crash se o player for libertado enquanto o loop corre
+                } catch (_: Exception) {
                     break
                 }
                 delay(1000)
