@@ -1,9 +1,9 @@
 package com.example.myapplication
 
-import android.media.MediaPlayer
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,14 +14,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
+    private val viewModel: AudioViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -30,7 +30,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = Color.White
                 ) {
-                    AudioPlayerScreen()
+                    AudioPlayerScreen(viewModel)
                 }
             }
         }
@@ -38,98 +38,19 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AudioPlayerScreen() {
-    val context = LocalContext.current
-
-    // BUSCA DINÂMICA: Lista os arquivos da pasta raw por ordem alfabética
-    val songIds = remember {
-        R.raw::class.java.fields
-            .filter { it.type == Int::class.javaPrimitiveType }
-            .sortedBy { it.name }
-            .map { it.getInt(null) }
-    }
-
-    var currentSongIndex by remember { mutableIntStateOf(0) }
-
-    // O MediaPlayer agora é recriado sempre que o índice da música muda
-    val mediaPlayer = remember(currentSongIndex) {
-        if (songIds.isNotEmpty()) {
-            MediaPlayer.create(context, songIds[currentSongIndex])
-        } else null
-    }
-
-    var isPlaying by remember { mutableStateOf(false) }
-    var currentPosition by remember { mutableIntStateOf(0) }
-    var totalDuration by remember { mutableIntStateOf(mediaPlayer?.duration ?: 0) }
+fun AudioPlayerScreen(viewModel: AudioViewModel) {
+    val isPlaying = viewModel.isPlaying
+    val currentPosition = viewModel.currentPosition
+    val totalDuration = viewModel.totalDuration
+    val songIds = viewModel.songIds
 
     val darkerGrey = Color(0xFFAAAAAA)
 
-    if (mediaPlayer == null) {
+    if (songIds.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Nenhuma música encontrada na pasta raw")
+            Text("Nenhuma música encontrada na pasta raw", color = Color.Black)
         }
         return
-    }
-
-    // Lógica do Sensor de Proximidade: Play/Pause
-    // O sensor é reiniciado se o mediaPlayer mudar (troca de música)
-    DisposableEffect(mediaPlayer) {
-        val sensorHelper = ProximitySensorHelper(context) {
-            mediaPlayer.let {
-                if (it.isPlaying) {
-                    it.pause()
-                    isPlaying = false
-                } else {
-                    it.start()
-                    isPlaying = true
-                }
-            }
-        }
-        sensorHelper.start()
-        onDispose {
-            sensorHelper.stop()
-        }
-    }
-
-    // Lógica Unificada: Configura o player sempre que ele muda (troca de música)
-    LaunchedEffect(mediaPlayer) {
-        currentPosition = 0 // Reseta a barra para o início
-        totalDuration = mediaPlayer.duration
-        
-        // Se o estado era "tocando", inicia a nova música automaticamente
-        if (isPlaying) {
-            mediaPlayer.start()
-        }
-
-        // Configura o que fazer quando a música terminar
-        mediaPlayer.setOnCompletionListener {
-            if (currentSongIndex < songIds.size - 1) {
-                currentSongIndex++ // Vai para a próxima
-            } else {
-                currentSongIndex = 0 // Volta para a primeira (Loop)
-            }
-        }
-    }
-
-    // Loop de progresso: Agora depende de 'isPlaying' E do 'mediaPlayer' atual
-    LaunchedEffect(isPlaying, mediaPlayer) {
-        if (isPlaying) {
-            while (true) {
-                try {
-                    currentPosition = mediaPlayer.currentPosition
-                } catch (_: Exception) {
-                    break
-                }
-                delay(1000)
-            }
-        }
-    }
-
-    // Libertar memória ao fechar ou trocar de música
-    DisposableEffect(mediaPlayer) {
-        onDispose {
-            mediaPlayer.release()
-        }
     }
 
     Column(
@@ -152,10 +73,7 @@ fun AudioPlayerScreen() {
 
         Slider(
             value = currentPosition.toFloat(),
-            onValueChange = {
-                currentPosition = it.toInt()
-                mediaPlayer.seekTo(it.toInt())
-            },
+            onValueChange = { viewModel.seekTo(it.toInt()) },
             valueRange = 0f..totalDuration.toFloat().coerceAtLeast(1f),
             modifier = Modifier.width(280.dp),
             colors = SliderDefaults.colors(
@@ -183,14 +101,7 @@ fun AudioPlayerScreen() {
             Spacer(modifier = Modifier.width(40.dp))
 
             IconButton(
-                onClick = {
-                    if (isPlaying) {
-                        mediaPlayer.pause()
-                    } else {
-                        mediaPlayer.start()
-                    }
-                    isPlaying = !isPlaying
-                },
+                onClick = { viewModel.togglePlayPause() },
                 modifier = Modifier.size(48.dp)
             ) {
                 Icon(
@@ -204,12 +115,7 @@ fun AudioPlayerScreen() {
             }
 
             IconButton(
-                onClick = {
-                    mediaPlayer.pause()
-                    mediaPlayer.seekTo(0)
-                    currentPosition = 0
-                    isPlaying = false
-                },
+                onClick = { viewModel.stop() },
                 modifier = Modifier.size(40.dp)
             ) {
                 Icon(
