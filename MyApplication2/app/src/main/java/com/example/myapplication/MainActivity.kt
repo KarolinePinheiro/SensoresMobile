@@ -43,7 +43,6 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
     val currentPosition = viewModel.currentPosition
     val totalDuration = viewModel.totalDuration
     val songIds = viewModel.songIds
-
     val darkerGrey = Color(0xFFAAAAAA)
 
     if (songIds.isEmpty()) {
@@ -53,78 +52,132 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
         return
     }
 
-    Column(
+    // Container Principal
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .padding(24.dp)
     ) {
+        // --- 1. ELEMENTOS CENTRAIS E BOTÕES DE ÓRBITA ---
+
+        // Capa do Álbum
         Image(
             painter = painterResource(id = R.drawable.album_cover),
             contentDescription = null,
             modifier = Modifier
-                .size(250.dp)
+                .size(220.dp)
+                .align(Alignment.Center)
                 .clip(RoundedCornerShape(8.dp)),
             contentScale = ContentScale.Crop
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Slider(
-            value = currentPosition.toFloat(),
-            onValueChange = { viewModel.seekTo(it.toInt()) },
-            valueRange = 0f..totalDuration.toFloat().coerceAtLeast(1f),
-            modifier = Modifier.width(280.dp),
-            colors = SliderDefaults.colors(
-                thumbColor = darkerGrey,
-                activeTrackColor = darkerGrey,
-                inactiveTrackColor = darkerGrey.copy(alpha = 0.3f)
-            )
-        )
-
-        Row(
-            modifier = Modifier.width(250.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+        // Botão PLAY / PAUSE (Topo)
+        IconButton(
+            onClick = { viewModel.togglePlayPause() },
+            modifier = Modifier
+                .align(Alignment.Center)
+                .offset(y = (-160).dp)
+                .size(56.dp)
         ) {
-            Text(text = formatTime(currentPosition), color = Color.Black)
-            Text(text = formatTime(totalDuration), color = Color.Black)
+            Icon(
+                painter = painterResource(
+                    id = if (isPlaying) R.drawable.pause else R.drawable.play
+                ),
+                contentDescription = "Play/Pause",
+                tint = Color.Unspecified,
+                modifier = Modifier.fillMaxSize()
+            )
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Row(
-            modifier = Modifier.width(250.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
+        // Botão ANTERIOR (Esquerda)
+        IconButton(
+            onClick = { /* viewModel.previous() */ },
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .size(48.dp)
         ) {
-            Spacer(modifier = Modifier.width(40.dp))
+            Icon(
+                painter = painterResource(id = R.drawable.previous),
+                contentDescription = "Previous",
+                tint = Color.Unspecified,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
-            IconButton(
-                onClick = { viewModel.togglePlayPause() },
-                modifier = Modifier.size(48.dp)
-            ) {
-                Icon(
-                    painter = painterResource(
-                        id = if (isPlaying) R.drawable.pause else R.drawable.play
-                    ),
-                    contentDescription = null,
-                    tint = darkerGrey,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
+        // Botão PRÓXIMO (Direita)
+        IconButton(
+            onClick = { /* viewModel.next() */ },
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .size(48.dp)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.next),
+                contentDescription = "Next",
+                tint = Color.Unspecified,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
-            IconButton(
-                onClick = { viewModel.stop() },
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.stop),
-                    contentDescription = null,
-                    tint = darkerGrey,
-                    modifier = Modifier.fillMaxSize()
+        // Botão STOP (Baixo - logo abaixo da imagem)
+        IconButton(
+            onClick = { viewModel.stop() },
+            modifier = Modifier
+                .align(Alignment.Center)
+                .offset(y = 160.dp)
+                .size(48.dp)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.stop),
+                contentDescription = "Stop",
+                tint = Color.Unspecified,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        // --- 2. BARRA DE PROGRESSO E TIMERS (PARTE INFERIOR) ---
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 60.dp), // Espaço para não colar na borda
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Slider(
+                value = currentPosition.toFloat(),
+                onValueChange = { viewModel.seekTo(it.toInt()) },
+                valueRange = 0f..totalDuration.toFloat().coerceAtLeast(1f),
+                modifier = Modifier.fillMaxWidth(0.85f),
+                colors = SliderDefaults.colors(
+                    thumbColor = darkerGrey,
+                    activeTrackColor = darkerGrey,
+                    inactiveTrackColor = darkerGrey.copy(alpha = 0.3f)
                 )
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(0.85f),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(text = formatTime(currentPosition), color = Color.Black, style = MaterialTheme.typography.bodySmall)
+                Text(text = formatTime(totalDuration), color = Color.Black, style = MaterialTheme.typography.bodySmall)
             }
+        }
+
+        // --- 3. BOTÕES AUXILIARES (CANTOS) ---
+
+        // SHUFFLE (Canto Inferior Direito)
+        IconButton(
+            onClick = { /* viewModel.toggleShuffle() */ },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .size(32.dp)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.shuffle),
+                contentDescription = "Shuffle",
+                tint = darkerGrey
+            )
         }
     }
 }
