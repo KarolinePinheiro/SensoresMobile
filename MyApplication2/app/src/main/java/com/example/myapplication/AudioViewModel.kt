@@ -1,6 +1,8 @@
 package com.example.myapplication
 
 import android.app.Application
+import android.content.Context
+import android.media.AudioManager
 import android.media.MediaPlayer
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -15,6 +17,7 @@ import kotlinx.coroutines.launch
 class AudioViewModel(application: Application) : AndroidViewModel(application) {
     private var mediaPlayer: MediaPlayer? = null
     private var updateJob: Job? = null
+    private val audioManager = application.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
     val songIds: List<Int> = R.raw::class.java.fields
         .filter { it.type == Int::class.javaPrimitiveType }
@@ -100,6 +103,22 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
         currentSongIndex = if (currentSongIndex > 0) currentSongIndex - 1 else songIds.size - 1
         currentPosition = 0
         loadSong()
+    }
+
+    fun volumeUp() {
+        audioManager.adjustStreamVolume(
+            AudioManager.STREAM_MUSIC,
+            AudioManager.ADJUST_RAISE,
+            AudioManager.FLAG_SHOW_UI
+        )
+    }
+
+    fun volumeDown() {
+        audioManager.adjustStreamVolume(
+            AudioManager.STREAM_MUSIC,
+            AudioManager.ADJUST_LOWER,
+            AudioManager.FLAG_SHOW_UI
+        )
     }
 
     private fun startPositionUpdates() {

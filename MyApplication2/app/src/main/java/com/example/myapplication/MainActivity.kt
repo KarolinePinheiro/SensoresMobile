@@ -47,7 +47,6 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
     val totalDuration = viewModel.totalDuration
     val songIds = viewModel.songIds
     
-    // Cores Frutiger Aero: Azul vibrante e cristalino
     val aeroLightBlue = Color(0xFF00D4FF)
     val aeroDeepBlue = Color(0xFF0056B3)
     val backgroundBrush = Brush.verticalGradient(
@@ -72,7 +71,7 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
             .background(backgroundBrush)
             .padding(24.dp)
     ) {
-        // --- 1. SHUFFLE (Canto Superior Direito - Maior) ---
+        // --- 1. SHUFFLE ---
         IconButton(
             onClick = { /* viewModel.toggleShuffle() */ },
             modifier = Modifier
@@ -87,20 +86,19 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
             )
         }
 
-        // --- 2. ELEMENTOS CENTRAIS (Navegação + Capa e Barra) ---
+        // --- 2. ELEMENTOS CENTRAIS ---
         Column(
             modifier = Modifier.align(Alignment.Center),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Linha com Previous - Capa - Next
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Botão Anterior (Esquerdo)
+                // Botão Anterior
                 IconButton(
-                    onClick = { /* viewModel.previous() */ },
+                    onClick = { viewModel.previous() },
                     modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
@@ -113,43 +111,78 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // Capa do Álbum com o Play/Pause por cima
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.size(200.dp) // Reduzi o tamanho para caber os botões nas laterais
+                // Coluna Central: Volume Up -> Capa -> Volume Down
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.album_cover),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(16.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-
-                    // Botão PLAY / PAUSE (Mais pequenino, sobre a capa)
+                    // Botão Volume Up
                     IconButton(
-                        onClick = { viewModel.togglePlayPause() },
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(Color.Black.copy(alpha = 0.35f), CircleShape)
+                        onClick = { /* viewModel.volumeUp() */ },
+                        modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
-                            painter = painterResource(
-                                id = if (isPlaying) R.drawable.pause else R.drawable.play
-                            ),
-                            contentDescription = "Play/Pause",
+                            painter = painterResource(id = R.drawable.volume_up),
+                            contentDescription = "Volume Up",
                             tint = Color.White,
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Capa do Álbum
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.size(200.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.album_cover),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(16.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+
+                        IconButton(
+                            onClick = { viewModel.togglePlayPause() },
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(Color.Black.copy(alpha = 0.35f), CircleShape)
+                        ) {
+                            Icon(
+                                painter = painterResource(
+                                    id = if (isPlaying) R.drawable.pause else R.drawable.play
+                                ),
+                                contentDescription = "Play/Pause",
+                                tint = Color.White,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Botão Volume Down
+                    IconButton(
+                        onClick = { /* viewModel.volumeDown() */ },
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.volume_down),
+                            contentDescription = "Volume Down",
+                            tint = Color.White,
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // Botão Próximo (Direito)
+                // Botão Próximo
                 IconButton(
-                    onClick = { /* viewModel.next() */ },
+                    onClick = { viewModel.next() },
                     modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
@@ -163,7 +196,6 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Barra de Progresso (Debaixo da capa)
             Slider(
                 value = currentPosition.toFloat(),
                 onValueChange = { viewModel.seekTo(it.toInt()) },
