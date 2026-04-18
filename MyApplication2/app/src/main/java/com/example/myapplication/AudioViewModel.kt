@@ -49,7 +49,7 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
             mediaPlayer?.let {
                 totalDuration = it.duration
                 it.setOnCompletionListener {
-                    nextSong()
+                    next()
                 }
             }
             if (isPlaying) {
@@ -88,8 +88,16 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
         currentPosition = position
     }
 
-    private fun nextSong() {
+    fun next() {
+        if (songIds.isEmpty()) return
         currentSongIndex = (currentSongIndex + 1) % songIds.size
+        currentPosition = 0
+        loadSong()
+    }
+
+    fun previous() {
+        if (songIds.isEmpty()) return
+        currentSongIndex = if (currentSongIndex > 0) currentSongIndex - 1 else songIds.size - 1
         currentPosition = 0
         loadSong()
     }
