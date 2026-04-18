@@ -71,9 +71,9 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
             .background(backgroundBrush)
             .padding(24.dp)
     ) {
-        // --- 1. SHUFFLE ---
+        // --- 1. SHUFFLE (Tocar aleatória agora) ---
         IconButton(
-            onClick = { /* viewModel.toggleShuffle() */ },
+            onClick = { viewModel.playRandomSong() },
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .size(64.dp)
@@ -118,7 +118,7 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
                 ) {
                     // Botão Volume Up
                     IconButton(
-                        onClick = { /* viewModel.volumeUp() */ },
+                        onClick = { viewModel.volumeUp() },
                         modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
@@ -166,7 +166,7 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
 
                     // Botão Volume Down
                     IconButton(
-                        onClick = { /* viewModel.volumeDown() */ },
+                        onClick = { viewModel.volumeDown() },
                         modifier = Modifier.size(48.dp)
                     ) {
                         Icon(

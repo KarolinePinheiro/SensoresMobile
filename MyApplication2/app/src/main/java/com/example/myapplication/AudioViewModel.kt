@@ -13,6 +13,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 class AudioViewModel(application: Application) : AndroidViewModel(application) {
     private var mediaPlayer: MediaPlayer? = null
@@ -51,9 +52,7 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
             mediaPlayer = MediaPlayer.create(getApplication(), songIds[currentSongIndex])
             mediaPlayer?.let {
                 totalDuration = it.duration
-                it.setOnCompletionListener {
-                    next()
-                }
+                it.setOnCompletionListener { next() }
             }
             if (isPlaying) {
                 mediaPlayer?.start()
@@ -78,11 +77,27 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
 
     fun stop() {
         mediaPlayer?.let {
-            it.pause()
+            if (it.isPlaying) {
+                it.pause()
+            }
             it.seekTo(0)
             currentPosition = 0
             isPlaying = false
             stopPositionUpdates()
+        }
+    }
+
+    fun playRandomSong() {
+        if (songIds.size > 1) {
+            var nextIndex: Int
+            do {
+                nextIndex = Random.nextInt(songIds.size)
+            } while (nextIndex == currentSongIndex)
+            
+            currentSongIndex = nextIndex
+            currentPosition = 0
+            isPlaying = true
+            loadSong()
         }
     }
 
@@ -106,32 +121,18 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun volumeUp() {
-        audioManager.adjustStreamVolume(
-            AudioManager.STREAM_MUSIC,
-            AudioManager.ADJUST_RAISE,
-            AudioManager.FLAG_SHOW_UI
-        )
+        audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI)
     }
 
     fun volumeDown() {
-        audioManager.adjustStreamVolume(
-            AudioManager.STREAM_MUSIC,
-            AudioManager.ADJUST_LOWER,
-            AudioManager.FLAG_SHOW_UI
-        )
+        audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI)
     }
 
     private fun startPositionUpdates() {
         updateJob?.cancel()
         updateJob = viewModelScope.launch {
             while (isPlaying) {
-                mediaPlayer?.let {
-                    try {
-                        currentPosition = it.currentPosition
-                    } catch (e: Exception) {
-                        // ignore
-                    }
-                }
+                mediaPlayer?.let { currentPosition = it.currentPosition }
                 delay(1000)
             }
         }
