@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
@@ -47,6 +48,14 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
         private set
 
     var totalDuration by mutableIntStateOf(0)
+        private set
+
+    // Cores fixas para o background
+    val aeroLightBlue = Color(0xFF00D4FF)
+    val aeroDeepBlue = Color(0xFF0056B3)
+
+    // Estado para a cor do botão de Shuffle
+    var shuffleButtonColor by mutableStateOf(Color.White)
         private set
 
     private val proximitySensorHelper = ProximitySensorHelper(application) {
@@ -118,10 +127,19 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
             
             currentSongIndex = nextIndex
             currentPosition = 0
-            // If it was already playing, keep playing. If not, maybe we should start?
-            // Usually shuffle starts the song.
             isPlaying = true
             loadSong()
+            
+            // Muda a cor do botão para amarelo temporariamente
+            triggerShuffleEffect()
+        }
+    }
+
+    private fun triggerShuffleEffect() {
+        viewModelScope.launch {
+            shuffleButtonColor = Color.Yellow
+            delay(1000) // Fica amarelo por 1 segundo
+            shuffleButtonColor = Color.White
         }
     }
 

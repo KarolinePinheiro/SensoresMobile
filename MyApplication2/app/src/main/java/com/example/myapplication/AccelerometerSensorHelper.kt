@@ -19,29 +19,34 @@ class AccelerometerSensorHelper(
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val accelerometer: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
-    private val TILT_THRESHOLD = 6.0f
+    // Configurações de Inclinação (Tilt)
+    private val TILT_THRESHOLD = 7.5f
     private val TILT_COOLDOWN_MS = 1500L
     private var lastTiltTime = 0L
 
-    private val VOLUME_TILT_THRESHOLD = 6.0f
+    // Configurações de Volume
+    private val VOLUME_TILT_THRESHOLD = 7.5f
     private val VOLUME_COOLDOWN_MS = 500L
     private var lastVolumeTime = 0L
 
-    private val SHAKE_THRESHOLD = 2.7f
-    private val SHAKE_SLOP_TIME_MS = 500
-    private val SHAKE_RESET_TIME_MS = 3000
+    // Configurações de Abanar (Shake)
+    private val SHAKE_THRESHOLD = 12.0f // Aumentado significativamente para detetar "picos" de força G
+    private val SHAKE_SLOP_TIME_MS = 250L
+    private val SHAKE_RESET_TIME_MS = 1500L
+    private val REQUIRED_SHAKES = 3
 
     private var lastShakeTimestamp = 0L
     private var shakeCount = 0
+    private var lastHighAccelerationTime = 0L // Para bloquear o Tilt durante o movimento
 
     private var lastX = 0f
     private var lastY = 0f
     private var lastZ = 0f
-    private var shakeInitialized = false
+    private var initialized = false
 
     fun start() {
         accelerometer?.let {
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI) // DELAY_UI é mais rápido para SHAKE
         }
     }
 
@@ -55,66 +60,73 @@ class AccelerometerSensorHelper(
         val x = event.values[0]
         val y = event.values[1]
         val z = event.values[2]
-
         val currentTime = System.currentTimeMillis()
 
-        // TILT (NEXT / PREVIOUS)
-        if (currentTime - lastTiltTime >= TILT_COOLDOWN_MS) {
-            if (x < -TILT_THRESHOLD) {
-                lastTiltTime = currentTime
-                onNext()
-            } else if (x > TILT_THRESHOLD) {
-                lastTiltTime = currentTime
-                onPrevious()
-            }
-        }
-
-        // VOLUME
-        if (currentTime - lastVolumeTime > VOLUME_COOLDOWN_MS) {
-            if (y > VOLUME_TILT_THRESHOLD) {
-                onVolumeUp()
-                lastVolumeTime = currentTime
-            } else if (y < -VOLUME_TILT_THRESHOLD) {
-                onVolumeDown()
-                lastVolumeTime = currentTime
-            }
-        }
-
-        // SHAKE (SHUFFLE)
-        if (!shakeInitialized) {
-            lastX = x
-            lastY = y
-            lastZ = z
-            shakeInitialized = true
+        if (!initialized) {
+            lastX = x; lastY = y; lastZ = z
+            initialized = true
             return
         }
 
-        val deltaX = x - lastX
-        val deltaY = y - lastY
-        val deltaZ = z - lastZ
+        // 1. CÁLCULO DE ACELERAÇÃO (FORÇA G)
+        // Usamos a diferença para detetar o "impacto" do movimento
+        val deltaX = abs(x - lastX)
+        val deltaY = abs(y - lastY)
+        val deltaZ = abs(z - lastZ)
+        val totalDelta = deltaX + deltaY + deltaZ
 
-        lastX = x
-        lastY = y
-        lastZ = z
+        lastX = x; lastY = y; lastZ = z
 
-        val acceleration = abs(deltaX) + abs(deltaY) + abs(deltaZ)
+        // Se houver qualquer movimento minimamente brusco, marcamos o tempo
+        // Isso ajuda a ignorar o Tilt enquanto o telemóvel está a ser mexido
+        if (totalDelta > 4.0f) {
+            lastHighAccelerationTime = currentTime
+        }
 
-        val now = System.currentTimeMillis()
-        val REQUIRED_SHAKES = 3
-
-        if (lastShakeTimestamp + SHAKE_RESET_TIME_MS < now) {
+        // 2. LÓGICA DO SHAKE (SHUFFLE)
+        if (currentTime - lastShakeTimestamp > SHAKE_RESET_TIME_MS) {
             shakeCount = 0
         }
 
-        if (acceleration > SHAKE_THRESHOLD) {
-            if (lastShakeTimestamp + SHAKE_SLOP_TIME_MS > now) return
+        if (totalDelta > SHAKE_THRESHOLD) {
+            if (currentTime - lastShakeTimestamp > SHAKE_SLOP_TIME_MS) {
+                lastShakeTimestamp = currentTime
+                shakeCount++
 
-            lastShakeTimestamp = now
-            shakeCount++
+                if (shakeCount >= REQUIRED_SHAKES) {
+                    shakeCount = 0
+                    onShuffle()
+                    lastTiltTime = currentTime + 1000 // Bloqueia tilt por 1s extra após shuffle
+                    return
+                }
+            }
+        }
 
-            if (shakeCount >= REQUIRED_SHAKES) {
-                shakeCount = 0
-                onShuffle()
+        // 3. LÓGICA DO TILT (NEXT/PREV/VOLUME)
+        // Só processa inclinação se o telemóvel estiver "estável" (sem aceleração brusca recente)
+        val isDeviceStable = (currentTime - lastHighAccelerationTime) > 300
+
+        if (isDeviceStable) {
+            // NEXT / PREVIOUS (Eixo X)
+            if (currentTime - lastTiltTime >= TILT_COOLDOWN_MS) {
+                if (x < -TILT_THRESHOLD) {
+                    onNext()
+                    lastTiltTime = currentTime
+                } else if (x > TILT_THRESHOLD) {
+                    onPrevious()
+                    lastTiltTime = currentTime
+                }
+            }
+
+            // VOLUME (Eixo Y)
+            if (currentTime - lastVolumeTime > VOLUME_COOLDOWN_MS) {
+                if (y > VOLUME_TILT_THRESHOLD) {
+                    onVolumeUp()
+                    lastVolumeTime = currentTime
+                } else if (y < -VOLUME_TILT_THRESHOLD) {
+                    onVolumeDown()
+                    lastVolumeTime = currentTime
+                }
             }
         }
     }

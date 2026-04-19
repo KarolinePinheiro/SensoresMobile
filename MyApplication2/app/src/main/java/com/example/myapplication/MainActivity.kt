@@ -50,6 +50,7 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
     val songIds = viewModel.songIds
     val currentSongTitle = viewModel.currentSongTitle
     val currentSongImage = viewModel.currentSongImage
+    val shuffleButtonColor = viewModel.shuffleButtonColor
     
     val aeroLightBlue = Color(0xFF00D4FF)
     val aeroDeepBlue = Color(0xFF0056B3)
@@ -69,7 +70,6 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
         return
     }
 
-    // Definimos um espaçamento padrão para manter a consistência
     val standardSpacing = 32.dp
 
     Box(
@@ -88,7 +88,7 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
             Icon(
                 painter = painterResource(id = R.drawable.shuffle),
                 contentDescription = "Shuffle",
-                tint = Color.White,
+                tint = shuffleButtonColor, // A cor do ícone muda aqui!
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -98,7 +98,6 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
             modifier = Modifier.align(Alignment.Center),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // --- AUMENTAR SOM (Acima do Álbum) ---
             IconButton(
                 onClick = { viewModel.volumeUp() },
                 modifier = Modifier.size(56.dp)
@@ -113,13 +112,11 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
 
             Spacer(modifier = Modifier.height(standardSpacing))
 
-            // --- Nível da Capa e Navegação (Anterior | Capa | Próximo) ---
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Botão Anterior
                 IconButton(
                     onClick = { viewModel.previous() },
                     modifier = Modifier.size(56.dp)
@@ -134,7 +131,6 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
 
                 Spacer(modifier = Modifier.width(24.dp))
 
-                // Capa do Álbum
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier.size(220.dp)
@@ -167,7 +163,6 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
 
                 Spacer(modifier = Modifier.width(24.dp))
 
-                // Botão Próximo
                 IconButton(
                     onClick = { viewModel.next() },
                     modifier = Modifier.size(56.dp)
@@ -183,7 +178,6 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
 
             Spacer(modifier = Modifier.height(standardSpacing))
 
-            // --- TÍTULO DA MÚSICA ---
             Text(
                 text = currentSongTitle,
                 color = Color.White,
@@ -193,7 +187,6 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- PROGRESSO (SLIDER) ---
             Slider(
                 value = currentPosition.toFloat(),
                 onValueChange = { viewModel.seekTo(it.toInt()) },
@@ -206,7 +199,6 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
                 )
             )
 
-            // --- TIME STAMP ---
             Row(
                 modifier = Modifier.fillMaxWidth(0.9f),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -217,7 +209,6 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
 
             Spacer(modifier = Modifier.height(standardSpacing))
 
-            // --- DIMINUIR SOM (Abaixo do Time Stamp e Centrado) ---
             IconButton(
                 onClick = { viewModel.volumeDown() },
                 modifier = Modifier.size(56.dp)
