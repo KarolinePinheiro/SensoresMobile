@@ -20,12 +20,17 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
     private var updateJob: Job? = null
     private val audioManager = application.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
-    val songIds: List<Int> = R.raw::class.java.fields
+    private val rawFields = R.raw::class.java.fields
         .filter { it.type == Int::class.javaPrimitiveType }
         .sortedBy { it.name }
-        .map { it.getInt(null) }
+
+    val songIds: List<Int> = rawFields.map { it.getInt(null) }
+    private val songNames: List<String> = rawFields.map { it.name }
 
     var currentSongIndex by mutableIntStateOf(0)
+        private set
+
+    var currentSongTitle by mutableStateOf("")
         private set
 
     var isPlaying by mutableStateOf(false)
@@ -49,6 +54,7 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
     private fun loadSong() {
         mediaPlayer?.release()
         if (songIds.isNotEmpty()) {
+            currentSongTitle = formatTitle(songNames[currentSongIndex])
             mediaPlayer = MediaPlayer.create(getApplication(), songIds[currentSongIndex])
             mediaPlayer?.let {
                 totalDuration = it.duration
@@ -59,6 +65,12 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
                 startPositionUpdates()
             }
         }
+    }
+
+    private fun formatTitle(rawName: String): String {
+        return rawName.replace("_", " ")
+            .split(" ")
+            .joinToString(" ") { it.replaceFirstChar { char -> char.uppercase() } }
     }
 
     fun togglePlayPause() {
@@ -77,9 +89,7 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
 
     fun stop() {
         mediaPlayer?.let {
-            if (it.isPlaying) {
-                it.pause()
-            }
+            if (it.isPlaying) it.pause()
             it.seekTo(0)
             currentPosition = 0
             isPlaying = false
