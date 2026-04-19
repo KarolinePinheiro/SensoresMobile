@@ -37,7 +37,7 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
     var currentSongTitle by mutableStateOf("")
         private set
 
-    var currentSongImage by mutableIntStateOf(R.drawable.album_cover) // Imagem padrão
+    var currentSongImage by mutableIntStateOf(R.drawable.album_cover)
         private set
 
     var isPlaying by mutableStateOf(false)
@@ -53,9 +53,19 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
         togglePlayPause()
     }
 
+    private val accelerometerSensorHelper = AccelerometerSensorHelper(
+        context = application,
+        onNext = { next() },
+        onPrevious = { previous() },
+        onShuffle = { playRandomSong() },
+        onVolumeUp = { volumeUp() },
+        onVolumeDown = { volumeDown() }
+    )
+
     init {
         loadSong()
         proximitySensorHelper.start()
+        accelerometerSensorHelper.start()
     }
 
     private fun loadSong() {
@@ -64,12 +74,7 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
             val rawName = songNames[currentSongIndex]
             currentSongTitle = formatTitle(rawName)
             
-            // --- LÓGICA DINÂMICA ---
-            // Tenta encontrar um drawable com o mesmo nome do ficheiro de áudio
-            // Usamos drawableFields para evitar o uso de getIdentifier (que é desencorajado por performance/otimização)
             val resourceId = drawableFields[rawName] ?: 0
-
-            // Se encontrar (resourceId != 0), usa essa imagem. Caso contrário, usa a padrão.
             currentSongImage = if (resourceId != 0) resourceId else R.drawable.album_cover
 
             mediaPlayer = MediaPlayer.create(getApplication(), songIds[currentSongIndex])
@@ -113,6 +118,8 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
             
             currentSongIndex = nextIndex
             currentPosition = 0
+            // If it was already playing, keep playing. If not, maybe we should start?
+            // Usually shuffle starts the song.
             isPlaying = true
             loadSong()
         }
@@ -164,5 +171,6 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
         super.onCleared()
         mediaPlayer?.release()
         proximitySensorHelper.stop()
+        accelerometerSensorHelper.stop()
     }
 }
