@@ -24,6 +24,10 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
         .filter { it.type == Int::class.javaPrimitiveType }
         .sortedBy { it.name }
 
+    private val drawableFields = R.drawable::class.java.fields
+        .filter { it.type == Int::class.javaPrimitiveType }
+        .associate { it.name to it.getInt(null) }
+
     val songIds: List<Int> = rawFields.map { it.getInt(null) }
     private val songNames: List<String> = rawFields.map { it.name }
 
@@ -62,12 +66,8 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
             
             // --- LÓGICA DINÂMICA ---
             // Tenta encontrar um drawable com o mesmo nome do ficheiro de áudio
-            val context = getApplication<Application>()
-            val resourceId = context.resources.getIdentifier(
-                rawName,           // Nome do ficheiro (ex: "musica1")
-                "drawable",        // Procura na pasta drawable
-                context.packageName
-            )
+            // Usamos drawableFields para evitar o uso de getIdentifier (que é desencorajado por performance/otimização)
+            val resourceId = drawableFields[rawName] ?: 0
 
             // Se encontrar (resourceId != 0), usa essa imagem. Caso contrário, usa a padrão.
             currentSongImage = if (resourceId != 0) resourceId else R.drawable.album_cover
@@ -101,16 +101,6 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
                 isPlaying = true
                 startPositionUpdates()
             }
-        }
-    }
-
-    fun stop() {
-        mediaPlayer?.let {
-            if (it.isPlaying) it.pause()
-            it.seekTo(0)
-            currentPosition = 0
-            isPlaying = false
-            stopPositionUpdates()
         }
     }
 
