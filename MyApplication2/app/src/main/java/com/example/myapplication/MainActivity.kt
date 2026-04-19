@@ -49,6 +49,7 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
     val totalDuration = viewModel.totalDuration
     val songIds = viewModel.songIds
     val currentSongTitle = viewModel.currentSongTitle
+    val currentSongImage = viewModel.currentSongImage
     
     val aeroLightBlue = Color(0xFF00D4FF)
     val aeroDeepBlue = Color(0xFF0056B3)
@@ -139,7 +140,7 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
                     modifier = Modifier.size(220.dp)
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.album_cover),
+                        painter = painterResource(id = currentSongImage),
                         contentDescription = null,
                         modifier = Modifier
                             .fillMaxSize()

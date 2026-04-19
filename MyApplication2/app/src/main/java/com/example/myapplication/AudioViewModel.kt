@@ -33,6 +33,9 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
     var currentSongTitle by mutableStateOf("")
         private set
 
+    var currentSongImage by mutableIntStateOf(R.drawable.album_cover) // Imagem padrão
+        private set
+
     var isPlaying by mutableStateOf(false)
         private set
 
@@ -54,7 +57,21 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
     private fun loadSong() {
         mediaPlayer?.release()
         if (songIds.isNotEmpty()) {
-            currentSongTitle = formatTitle(songNames[currentSongIndex])
+            val rawName = songNames[currentSongIndex]
+            currentSongTitle = formatTitle(rawName)
+            
+            // --- LÓGICA DINÂMICA ---
+            // Tenta encontrar um drawable com o mesmo nome do ficheiro de áudio
+            val context = getApplication<Application>()
+            val resourceId = context.resources.getIdentifier(
+                rawName,           // Nome do ficheiro (ex: "musica1")
+                "drawable",        // Procura na pasta drawable
+                context.packageName
+            )
+
+            // Se encontrar (resourceId != 0), usa essa imagem. Caso contrário, usa a padrão.
+            currentSongImage = if (resourceId != 0) resourceId else R.drawable.album_cover
+
             mediaPlayer = MediaPlayer.create(getApplication(), songIds[currentSongIndex])
             mediaPlayer?.let {
                 totalDuration = it.duration
