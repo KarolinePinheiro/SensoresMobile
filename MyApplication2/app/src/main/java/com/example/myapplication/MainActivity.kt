@@ -70,155 +70,126 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
         return
     }
 
-    val standardSpacing = 32.dp
-
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(backgroundBrush)
-            .padding(24.dp)
+            .padding(16.dp)
     ) {
-        // --- 1. SHUFFLE ---
+        // Botão Shuffle
         IconButton(
             onClick = { viewModel.playRandomSong() },
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .size(64.dp)
+            modifier = Modifier.align(Alignment.TopEnd).size(60.dp)
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.shuffle),
                 contentDescription = "Shuffle",
-                tint = shuffleButtonColor, // A cor do ícone muda aqui!
+                tint = shuffleButtonColor,
                 modifier = Modifier.fillMaxSize()
             )
         }
 
-        // --- 2. ELEMENTOS CENTRAIS ---
         Column(
             modifier = Modifier.align(Alignment.Center),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            IconButton(
-                onClick = { viewModel.volumeUp() },
-                modifier = Modifier.size(56.dp)
+            // --- ÁREA DA CRUZ (Fixa em 320dp para não "cair" nada) ---
+            Box(
+                modifier = Modifier.size(320.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.volume_up),
-                    contentDescription = "Volume Up",
-                    tint = Color.White,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-
-            Spacer(modifier = Modifier.height(standardSpacing))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                IconButton(
-                    onClick = { viewModel.previous() },
-                    modifier = Modifier.size(56.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.previous),
-                        contentDescription = "Previous",
-                        tint = Color.White,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(24.dp))
-
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.size(220.dp)
-                ) {
+                // CAPA DO ÁLBUM
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(180.dp)) {
                     Image(
                         painter = painterResource(id = currentSongImage),
                         contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(20.dp)),
+                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(20.dp)),
                         contentScale = ContentScale.Crop
                     )
-
+                    // Botão Play central
                     IconButton(
                         onClick = { viewModel.togglePlayPause() },
-                        modifier = Modifier
-                            .size(50.dp)
-                            .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                        modifier = Modifier.size(50.dp).background(Color.Black.copy(alpha = 0.4f), CircleShape)
                     ) {
                         Icon(
-                            painter = painterResource(
-                                id = if (isPlaying) R.drawable.pause else R.drawable.play
-                            ),
-                            contentDescription = "Play/Pause",
+                            painter = painterResource(id = if (isPlaying) R.drawable.pause else R.drawable.play),
+                            contentDescription = null,
                             tint = Color.White,
                             modifier = Modifier.size(28.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.width(24.dp))
+                // VOLUME UP (Topo)
+                IconButton(
+                    onClick = { viewModel.volumeUp() },
+                    modifier = Modifier.align(Alignment.TopCenter).size(64.dp)
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.volume_up),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
 
+                // VOLUME DOWN (Baixo)
+                IconButton(
+                    onClick = { viewModel.volumeDown() },
+                    modifier = Modifier.align(Alignment.BottomCenter).size(64.dp)
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.volume_down),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                // PREVIOUS (Esquerda - Aumentado para 70dp para compensar o aspeto menor)
+                IconButton(
+                    onClick = { viewModel.previous() },
+                    modifier = Modifier.align(Alignment.CenterStart).size(70.dp)
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.previous),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                // NEXT (Direita - Mantido em 64dp para não fugir do ecrã)
                 IconButton(
                     onClick = { viewModel.next() },
-                    modifier = Modifier.size(56.dp)
+                    modifier = Modifier.align(Alignment.CenterEnd).size(64.dp)
                 ) {
-                    Icon(
+                    Image(
                         painter = painterResource(id = R.drawable.next),
-                        contentDescription = "Next",
-                        tint = Color.White,
+                        contentDescription = null,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(standardSpacing))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            Text(
-                text = currentSongTitle,
-                color = Color.White,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
-
+            // INFO E SLIDER
+            Text(text = currentSongTitle, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            
             Spacer(modifier = Modifier.height(16.dp))
 
             Slider(
                 value = currentPosition.toFloat(),
                 onValueChange = { viewModel.seekTo(it.toInt()) },
                 valueRange = 0f..totalDuration.toFloat().coerceAtLeast(1f),
-                modifier = Modifier.fillMaxWidth(0.9f),
-                colors = SliderDefaults.colors(
-                    thumbColor = Color.White,
-                    activeTrackColor = Color.White,
-                    inactiveTrackColor = Color.White.copy(alpha = 0.4f)
-                )
+                modifier = Modifier.fillMaxWidth(0.85f),
+                colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = Color.White)
             )
 
             Row(
-                modifier = Modifier.fillMaxWidth(0.9f),
+                modifier = Modifier.fillMaxWidth(0.85f),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(text = formatTime(currentPosition), color = Color.White, style = MaterialTheme.typography.bodySmall)
-                Text(text = formatTime(totalDuration), color = Color.White, style = MaterialTheme.typography.bodySmall)
-            }
-
-            Spacer(modifier = Modifier.height(standardSpacing))
-
-            IconButton(
-                onClick = { viewModel.volumeDown() },
-                modifier = Modifier.size(56.dp)
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.volume_down),
-                    contentDescription = "Volume Down",
-                    tint = Color.White,
-                    modifier = Modifier.fillMaxSize()
-                )
+                Text(text = formatTime(currentPosition), color = Color.White, fontSize = 12.sp)
+                Text(text = formatTime(totalDuration), color = Color.White, fontSize = 12.sp)
             }
         }
     }
