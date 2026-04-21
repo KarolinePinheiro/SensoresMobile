@@ -51,6 +51,7 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
     val currentSongTitle = viewModel.currentSongTitle
     val currentSongImage = viewModel.currentSongImage
     val shuffleButtonColor = viewModel.shuffleButtonColor
+    val sensorsIcon = viewModel.currentSensorsIcon
     
     val aeroLightBlue = Color(0xFF00D4FF)
     val aeroDeepBlue = Color(0xFF0056B3)
@@ -76,24 +77,44 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
             .background(backgroundBrush)
             .padding(16.dp)
     ) {
-        // Botão Shuffle
-        IconButton(
-            onClick = { viewModel.playRandomSong() },
-            modifier = Modifier.align(Alignment.TopEnd).size(60.dp)
+        // --- BOTÕES DE TOPO ---
+        Row(
+            modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                painter = painterResource(id = R.drawable.shuffle),
-                contentDescription = "Shuffle",
-                tint = shuffleButtonColor,
-                modifier = Modifier.fillMaxSize()
-            )
+            // Botão de Sensores (Lado Esquerdo)
+            IconButton(
+                onClick = { viewModel.toggleSensors() },
+                modifier = Modifier.size(60.dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = sensorsIcon),
+                    contentDescription = "Toggle Sensors",
+                    tint = Color.Unspecified, // Mantém as cores originais do XML se houver
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            // Botão Shuffle (Lado Direito)
+            IconButton(
+                onClick = { viewModel.playRandomSong() },
+                modifier = Modifier.size(60.dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.shuffle),
+                    contentDescription = "Shuffle",
+                    tint = shuffleButtonColor,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
 
         Column(
             modifier = Modifier.align(Alignment.Center),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // --- ÁREA DA CRUZ (Fixa em 320dp para não "cair" nada) ---
+            // --- ÁREA DA CRUZ ---
             Box(
                 modifier = Modifier.size(320.dp),
                 contentAlignment = Alignment.Center
@@ -144,7 +165,7 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
                     )
                 }
 
-                // PREVIOUS (Esquerda - Aumentado para 70dp para compensar o aspeto menor)
+                // PREVIOUS (Esquerda)
                 IconButton(
                     onClick = { viewModel.previous() },
                     modifier = Modifier.align(Alignment.CenterStart).size(70.dp)
@@ -156,7 +177,7 @@ fun AudioPlayerScreen(viewModel: AudioViewModel) {
                     )
                 }
 
-                // NEXT (Direita - Mantido em 64dp para não fugir do ecrã)
+                // NEXT (Direita)
                 IconButton(
                     onClick = { viewModel.next() },
                     modifier = Modifier.align(Alignment.CenterEnd).size(64.dp)

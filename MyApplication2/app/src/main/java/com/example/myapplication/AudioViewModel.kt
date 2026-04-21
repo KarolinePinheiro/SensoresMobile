@@ -50,6 +50,27 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
     var totalDuration by mutableIntStateOf(0)
         private set
 
+    // --- LOGICA DE SENSORES ---
+    var sensorsEnabled by mutableStateOf(true)
+        private set
+
+    var currentSensorsIcon by mutableIntStateOf(R.drawable.sensors_on)
+        private set
+
+    fun toggleSensors() {
+        sensorsEnabled = !sensorsEnabled
+        if (sensorsEnabled) {
+            proximitySensorHelper.start()
+            accelerometerSensorHelper.start()
+            currentSensorsIcon = R.drawable.sensors_on
+        } else {
+            proximitySensorHelper.stop()
+            accelerometerSensorHelper.stop()
+            currentSensorsIcon = R.drawable.sensors_off
+        }
+    }
+    // --------------------------
+
     // Cores fixas para o background
     val aeroLightBlue = Color(0xFF00D4FF)
     val aeroDeepBlue = Color(0xFF0056B3)
@@ -73,6 +94,7 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         loadSong()
+        // Iniciam ligados por padrão
         proximitySensorHelper.start()
         accelerometerSensorHelper.start()
     }

@@ -5,12 +5,11 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 
 /**
- * Classe Helper para gerir o sensor de proximidade sem ser uma Activity.
+ * Classe Helper para gerir o sensor de proximidade.
+ * Ajustada para Deteção Instantânea.
  */
 class ProximitySensorHelper(
     context: Context,
@@ -20,33 +19,18 @@ class ProximitySensorHelper(
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val proximitySensor: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)
 
-    // Controlo de tempo e estado
     private var lastActionTime: Long = 0L
-    private val actionHandler = Handler(Looper.getMainLooper())
+    private val COOLDOWN_MS = 1500L // Intervalo mínimo entre comandos (1.5 segundos)
 
-    // Runnable que será executado após 2 segundos de mão parada
-    private val actionRunnable = Runnable {
-        lastActionTime = System.currentTimeMillis()
-        onTrigger()
-    }
-
-    /**
-     * Inicia a monitorização do sensor (Chamar no onResume da Activity)
-     */
     fun start() {
         proximitySensor?.let {
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
-            Log.d("ProximitySensor", "Sensor de proximidade iniciado.")
-        } ?: Log.e("ProximitySensor", "Sensor de proximidade não disponível!")
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_FASTEST)
+            Log.d("ProximitySensor", "Iniciado em modo de alta sensibilidade.")
+        }
     }
 
-    /**
-     * Para a monitorização (Chamar no onPause/onStop da Activity)
-     */
     fun stop() {
-        actionHandler.removeCallbacks(actionRunnable)
         sensorManager.unregisterListener(this)
-        Log.d("ProximitySensor", "Sensor de proximidade parado.")
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
@@ -54,24 +38,18 @@ class ProximitySensorHelper(
             val distance = event.values[0]
             val maxRange = proximitySensor?.maximumRange ?: 0f
 
-            // Verifica se a mão está perto
-            val isNear = distance < maxRange
+            // Lógica de Deteção Ultra Sensível:
+            // Se a distância for menor que o máximo, ou menor que um limiar fixo (5cm), considera "perto".
+            val isNear = distance < maxRange || distance < 5.0f
             val currentTime = System.currentTimeMillis()
 
             if (isNear) {
-                // 1. Verifica se já passaram 4 segundos desde a última ação
-                if (currentTime - lastActionTime >= 4000) {
-                    // 2. Agenda a ação para daqui a 2 segundos
-                    if (!actionHandler.hasMessages(0)) {
-                        Log.d("ProximitySensor", "Mão detectada. Aguardando 2 segundos...")
-                        actionHandler.postDelayed(actionRunnable, 2000)
-                    }
-                } else {
-                    Log.d("ProximitySensor", "Aguarde o intervalo de 4 segundos.")
+                // Verifica apenas o intervalo de segurança para não pausar/dar play repetidamente
+                if (currentTime - lastActionTime >= COOLDOWN_MS) {
+                    lastActionTime = currentTime
+                    Log.d("ProximitySensor", "Gatilho instantâneo detetado! Distância: $distance")
+                    onTrigger()
                 }
-            } else {
-                // Se a mão for removida, cancelamos qualquer ação agendada
-                actionHandler.removeCallbacks(actionRunnable)
             }
         }
     }
